@@ -76,6 +76,45 @@ func (sc *Scanner) Next() bool {
 	return true
 }
 
+// NextStrict parses the next JSON value from s passed to Init using strict
+// validation rules.
+//
+// Unlike Next, it fails on duplicate object keys, invalid \u escape
+// sequences, unpaired UTF-16 surrogates, raw control characters in strings
+// and non-standard numbers such as NaN or Inf. See ValidateStrict for
+// the full list of the performed checks.
+//
+// Returns true on success. The parsed value is available via Value call.
+//
+// Returns false either on error or on the end of s.
+// Call Error in order to determine the cause of the returned false.
+func (sc *Scanner) NextStrict() bool {
+	if sc.err != nil {
+		return false
+	}
+
+	sc.s = skipWS(sc.s)
+	if len(sc.s) == 0 {
+		sc.err = errEOF
+		return false
+	}
+
+	sc.c.reset()
+	v, tail, err := sc.c.parseValue(sc.s, 0)
+	if err != nil {
+		sc.err = err
+		return false
+	}
+	if err := validateStrictValue(sc.s[:len(sc.s)-len(tail)]); err != nil {
+		sc.err = err
+		return false
+	}
+
+	sc.s = tail
+	sc.v = v
+	return true
+}
+
 // Error returns the last error.
 func (sc *Scanner) Error() error {
 	if sc.err == errEOF {

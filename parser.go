@@ -52,6 +52,30 @@ func (p *Parser) ParseBytes(b []byte) (*Value, error) {
 	return p.Parse(b2s(b))
 }
 
+// ParseStrict parses s containing JSON using strict validation rules.
+//
+// Unlike Parse, it fails on duplicate object keys, invalid \u escape
+// sequences, unpaired UTF-16 surrogates, raw control characters in strings
+// and non-standard numbers such as NaN or Inf. See ValidateStrict for
+// the full list of the performed checks.
+//
+// The returned value is valid until the next call to Parse*.
+func (p *Parser) ParseStrict(s string) (*Value, error) {
+	if err := ValidateStrict(s); err != nil {
+		return nil, err
+	}
+	return p.Parse(s)
+}
+
+// ParseBytesStrict parses b containing JSON using strict validation rules.
+//
+// The returned Value is valid until the next call to Parse*.
+//
+// See ParseStrict for the performed checks.
+func (p *Parser) ParseBytesStrict(b []byte) (*Value, error) {
+	return p.ParseStrict(b2s(b))
+}
+
 type cache struct {
 	vs []Value
 }
